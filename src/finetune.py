@@ -5,19 +5,28 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, Trainer, TrainingA
 from peft import prepare_model_for_kbit_training, LoraConfig, get_peft_model
 
 from helpers import tokenize, generate_prompt
+from datetime import datetime
 
-DATA_PATH = "/media/leon/2800931A0092EE56"
-DATA_FILE = "rust-corpus-1k.jsonl"
+USERNAME = "0xideas"
+DATA_PATH = "../data"
+DATA_FILE = "corpus.jsonl"
 
 PAD_TOKEN = "</s>"
-CUTOFF_LEN = 256  #Our dataset has shot text
+CUTOFF_LEN = 2048  #Our dataset has shot text
 LORA_R = 8
 LORA_ALPHA = 2 * LORA_R
 LORA_DROPOUT = 0.1
 
+
+now = datetime.now()
 BASE_MODEL_SOURCE = "mistralai"
 BASE_MODEL = "Mistral-7B-v0.1"
-MODEL_VARIANT = "test"
+MODEL_VARIANT = f"rust-instruct"
+MODEL_SUBVARIANT = f"{DATA_FILE.replace('rust-corpus-', '').replace('.jsonl', '')}"
+MODEL_VARIANT_TS = f"{MODEL_VARIANT}-{MODEL_SUBVARIANT}-{now.year}-{now.month}-{now.day}-{now.hour}"
+
+input(f"hugging face repo: {MODEL_VARIANT}")
+input(f"full model name: {MODEL_VARIANT_TS}")
 
 
 
@@ -34,13 +43,22 @@ if __name__ == "__main__":
     
     model = prepare_model_for_kbit_training(model)
 
+    # config = LoraConfig(
+    #    r=LORA_R,
+    #    lora_alpha=LORA_ALPHA,
+    #    target_modules=[ "w1", "w2", "w3"],  #just targetting the MoE layers.
+    #    lora_dropout=LORA_DROPOUT,
+    #    bias="none",
+    #    task_type="CAUSAL_LM"
+    #)
+
     config = LoraConfig(
-        r=LORA_R,
-        lora_alpha=LORA_ALPHA,
-        target_modules=[ "w1", "w2", "w3"],  #just targetting the MoE layers.
-        lora_dropout=LORA_DROPOUT,
+        r=16,
+        lora_alpha=16,
+        lora_dropout=0.05,
         bias="none",
-        task_type="CAUSAL_LM"
+        task_type="CAUSAL_LM",
+        target_modules=["q_proj", "k_proj", "v_proj", "o_proj","gate_proj"]
     )
 
     model = get_peft_model(model, config)
@@ -58,12 +76,12 @@ if __name__ == "__main__":
         args=TrainingArguments(
             per_device_train_batch_size=1,
             gradient_accumulation_steps=4,
-            num_train_epochs=6,
+            num_train_epochs=3,
             learning_rate=1e-4,
             logging_steps=2,
             optim="adamw_torch",
             save_strategy="epoch",
-            output_dir="mixtral-moe-lora-instruct-shapeskeare"
+            output_dir=MODEL_VARIANT
         ),
         data_collator=transformers.DataCollatorForLanguageModeling(tokenizer, mlm=False)
     )
@@ -71,4 +89,6 @@ if __name__ == "__main__":
 
     trainer.train()
 
-    trainer.push_to_hub(f"leontl/{BASE_MODEL}-{MODEL_VARIANT}")
+    model_output_path = f"{USERNAME}/{MODEL_VARIANT_TS}"
+    print(f"{model_output_path = }")
+    trainer.push_to_hub(model_output_path)
