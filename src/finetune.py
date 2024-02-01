@@ -71,7 +71,7 @@ if __name__ == "__main__":
     print("dataset", dataset)
     train_data = dataset["train"] # Not using evaluation data
 
-    train_data = train_data.shuffle().map(lambda x: tokenize(tokenizer, generate_prompt(x), CUTOFF_LEN), remove_columns=["instruction" , "input", "output"])
+    train_data = train_data.shuffle(seed=101).map(lambda x: tokenize(tokenizer, generate_prompt(x), CUTOFF_LEN), remove_columns=["instruction" , "input", "output"])
 
     trainer = Trainer(
         model=model,
