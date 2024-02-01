@@ -14,9 +14,12 @@ DATA_FILE = "corpus.jsonl"
 PAD_TOKEN = "</s>"
 CUTOFF_LEN = 2048  #Our dataset has shot text
 LORA_R = 8
-LORA_ALPHA = 2 * LORA_R
+LORA_ALPHA = int(2 * LORA_R)
 LORA_DROPOUT = 0.1
 
+GRADIENT_ACC_STEPS = 4
+EPOCHS = 3
+LEARNING_RATE = 1e-4
 
 now = datetime.now()
 BASE_MODEL_SOURCE = "mistralai"
@@ -53,9 +56,9 @@ if __name__ == "__main__":
     #)
 
     config = LoraConfig(
-        r=16,
-        lora_alpha=16,
-        lora_dropout=0.05,
+        r=LORA_R,
+        lora_alpha=LORA_ALPHA,
+        lora_dropout=LORA_DROPOUT,
         bias="none",
         task_type="CAUSAL_LM",
         target_modules=["q_proj", "k_proj", "v_proj", "o_proj","gate_proj"]
@@ -75,9 +78,9 @@ if __name__ == "__main__":
         train_dataset=train_data,
         args=TrainingArguments(
             per_device_train_batch_size=1,
-            gradient_accumulation_steps=4,
-            num_train_epochs=3,
-            learning_rate=1e-4,
+            gradient_accumulation_steps=GRADIENT_ACC_STEPS,
+            num_train_epochs=EPOCHS,
+            learning_rate=LEARNING_RATE,
             logging_steps=2,
             optim="adamw_torch",
             save_strategy="epoch",
