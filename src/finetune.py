@@ -11,7 +11,6 @@ USERNAME = "0xideas"
 DATA_PATH = "../data"
 DATA_FILE = "corpus.jsonl"
 
-PAD_TOKEN = "</s>"
 CUTOFF_LEN = 2048  #Our dataset has shot text
 LORA_R = 8
 LORA_ALPHA = int(2 * LORA_R)
@@ -37,7 +36,6 @@ if __name__ == "__main__":
 
     # mistralai/Mixtral-8x7B-Instruct-v0.1
     tokenizer = AutoTokenizer.from_pretrained(f"{BASE_MODEL_SOURCE}/{BASE_MODEL}")
-    tokenizer.pad_token = PAD_TOKEN
     model = AutoModelForCausalLM.from_pretrained(f"{BASE_MODEL_SOURCE}/{BASE_MODEL}",
         load_in_4bit=True,
         torch_dtype=torch.float16,
